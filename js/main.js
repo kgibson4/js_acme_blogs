@@ -1,114 +1,93 @@
+// Creates an HTML element with optional text content and class
 function createElemWithText(element = 'p', textContent = '', className) {
     const createdElement = document.createElement(element);
     createdElement.textContent = textContent;
-    if (className) {
-        createdElement.className = className;
-    }
+    if (className) createdElement.className = className;
     return createdElement;
 }
 
+// Creates <option> elements for a select menu from user data
 function createSelectOptions(users) {
-    if (!Array.isArray(users)) {
-        return undefined;
-    }
+    if (!Array.isArray(users)) return undefined;
 
     const optionsArray = [];
 
     for (const user of users) {
-        const optionElement = document.createElement('option');
-        optionElement.value = user.id;          // assign user id as value
-        optionElement.textContent = user.name;  // assign user name as text
-        optionsArray.push(optionElement);
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = user.name;
+        optionsArray.push(option);
     }
 
     return optionsArray;
 }
 
+// Toggles the visibility of a post's comment section
 function toggleCommentSection(postId) {
-    // Return undefined if no postId is provided
     if (postId === undefined) return undefined;
-
-    // Select the section with data-post-id equal to postId
     const section = document.querySelector(`section[data-post-id="${postId}"]`);
-
-    // Return null if no section is found
     if (!section) return null;
-
-    // Toggle the 'hide' class
     section.classList.toggle('hide');
-
-    // Return the section element
     return section;
 }
 
+// Toggles a post's comment button text between "Show" and "Hide"
 function toggleCommentButton(postId) {
-    if (!postId) return undefined; // return undefined if no postId provided
-
-    // Select the button with data-post-id equal to postId
+    if (postId === undefined) return undefined;
     const button = document.querySelector(`button[data-post-id="${postId}"]`);
-
-    // Return null if no button is found
     if (!button) return null;
-
-    // Toggle the textContent
-    button.textContent = button.textContent === 'Show Comments' 
-        ? 'Hide Comments' 
-        : 'Show Comments';
-
-    // Return the button element
+    button.textContent = button.textContent === 'Show Comments' ? 'Hide Comments' : 'Show Comments';
     return button;
 }
 
+// Removes all child elements of a given parent element
 function deleteChildElements(parentElement) {
-    // Check if the parameter is a valid HTML element
     if (!(parentElement instanceof HTMLElement)) return undefined;
 
     let child = parentElement.lastElementChild;
-
     while (child) {
         parentElement.removeChild(child);
         child = parentElement.lastElementChild;
     }
-
     return parentElement;
 }
 
+// Adds click listeners to all comment buttons in the main section
 function addButtonListeners() {
-    // Select all buttons inside the main element
     const buttons = document.querySelectorAll('main button');
 
-    // Loop through each button
     buttons.forEach(button => {
         const postId = button.dataset.postId;
         if (postId) {
-            // Add a click listener that calls toggleComments with event and postId
-            button.addEventListener('click', function(event) {
+            const listener = function (event) {
                 toggleComments(event, postId);
-            });
+            };
+            button._toggleListener = listener;
+            button.addEventListener('click', listener);
         }
     });
 
-    // Return the NodeList of buttons
     return buttons;
 }
 
+// Removes previously added click listeners from comment buttons
 function removeButtonListeners() {
     const buttons = document.querySelectorAll('main button');
+    if (!buttons || buttons.length === 0) return buttons;
 
     buttons.forEach(button => {
-        const postId = button.dataset.postId; // match dataset key used in addButtonListeners
-        if (postId) {
-            button.removeEventListener('click', function(event) {
-                toggleComments(event, postId);
-            });
+        const postId = button.dataset.postId;
+        if (postId && button._toggleListener) {
+            button.removeEventListener('click', button._toggleListener);
+            delete button._toggleListener;
         }
     });
 
     return buttons;
 }
 
+// Creates a document fragment containing comment articles
 function createComments(comments) {
-    // Return undefined if no parameter is received
     if (!comments) return undefined;
 
     const fragment = document.createDocumentFragment();
@@ -126,15 +105,14 @@ function createComments(comments) {
     return fragment;
 }
 
+// Populates a <select> menu with user options
 function populateSelectMenu(users) {
-    // Return undefined if no parameter is received
     if (!users) return undefined;
 
     const selectMenu = document.getElementById('selectMenu');
     if (!selectMenu) return undefined;
 
     const options = createSelectOptions(users);
-
     if (Array.isArray(options)) {
         options.forEach(option => selectMenu.appendChild(option));
     }
@@ -142,69 +120,65 @@ function populateSelectMenu(users) {
     return selectMenu;
 }
 
+// Fetches all users from the API
 async function getUsers() {
     try {
         const response = await fetch('https://jsonplaceholder.typicode.com/users');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const users = await response.json();
-        return users;
+        return await response.json();
     } catch (error) {
         console.error('Error fetching users:', error);
         return null;
     }
 }
 
+// Fetches posts for a specific user from the API
 async function getUserPosts(userId) {
     if (userId === undefined) return undefined;
-
     try {
         const response = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const posts = await response.json();
-        return posts;
+        return await response.json();
     } catch (error) {
         console.error(`Error fetching posts for user ${userId}:`, error);
         return null;
     }
 }
 
+// Fetches a single user's data from the API
 async function getUser(userId) {
     if (userId === undefined) return undefined;
-
     try {
         const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const user = await response.json();
-        return user;
+        return await response.json();
     } catch (error) {
         console.error(`Error fetching user ${userId}:`, error);
         return null;
     }
 }
 
+// Fetches comments for a specific post from the API
 async function getPostComments(postId) {
     if (postId === undefined) return undefined;
-
     try {
         const response = await fetch(`https://jsonplaceholder.typicode.com/comments?postId=${postId}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const comments = await response.json();
-        return comments;
+        return await response.json();
     } catch (error) {
         console.error(`Error fetching comments for post ${postId}:`, error);
         return null;
     }
 }
 
+// Creates a comment section element with fetched comments
 async function displayComments(postId) {
     if (postId === undefined) return undefined;
 
-    // Create section element
     const section = document.createElement('section');
     section.dataset.postId = postId;
     section.classList.add('comments', 'hide');
 
-    // Fetch comments for the post
     const comments = await getPostComments(postId);
     if (comments) {
         const fragment = createComments(comments);
@@ -214,6 +188,7 @@ async function displayComments(postId) {
     return section;
 }
 
+// Creates post elements with author info, comments, and buttons
 async function createPosts(posts) {
     if (!posts) return undefined;
 
@@ -235,7 +210,6 @@ async function createPosts(posts) {
 
         const section = await displayComments(post.id);
 
-        // Append all elements to article
         article.append(h2, pBody, pPostId, pAuthor, pCatchPhrase, button, section);
         fragment.appendChild(article);
     }
@@ -243,16 +217,15 @@ async function createPosts(posts) {
     return fragment;
 }
 
+// Displays all posts or a default message if none exist
 async function displayPosts(posts) {
     const main = document.querySelector('main');
     if (!main) return undefined;
 
-    // Determine what to display: posts or default paragraph
     const element = posts && posts.length
         ? await createPosts(posts)
         : createElemWithText('p', 'Select an Employee to display their posts.');
 
-    // Add default-text class if no posts
     if (!posts || posts.length === 0) {
         element.classList.add('default-text');
     }
@@ -261,10 +234,11 @@ async function displayPosts(posts) {
     return element;
 }
 
+// Handles comment toggling when a button is clicked
 function toggleComments(event, postId) {
-    if (!event || !postId) return undefined;
+    if (!event || postId === undefined) return undefined;
 
-    event.target.listener = true; // for testing
+    event.target.listener = true;
 
     const section = toggleCommentSection(postId);
     const button = toggleCommentButton(postId);
@@ -272,39 +246,32 @@ function toggleComments(event, postId) {
     return [section, button];
 }
 
+// Clears old posts, displays new posts, and rebinds event listeners
 async function refreshPosts(posts) {
-    if (!posts) return undefined; // return undefined if no posts data provided
+    if (!posts) return undefined;
 
-    // Remove button listeners
     const removeButtons = removeButtonListeners();
-
-    // Delete all children of main element
     const main = document.querySelector('main');
     const mainElement = deleteChildElements(main);
-
-    // Display posts and await fragment
     const fragment = await displayPosts(posts);
-
-    // Re-add button listeners
     const addButtons = addButtonListeners();
 
     return [removeButtons, mainElement, fragment, addButtons];
 }
 
+// Handles the change event of the select menu
 async function selectMenuChangeEventHandler(event) {
-    // Return undefined if no event is passed
-    if (!event || !event.target) return undefined;
+    if (!event) return undefined;
 
-    const selectMenu = event.target;
+    const selectMenu = event.target || document.getElementById('selectMenu');
+    if (!selectMenu) return undefined;
+
     selectMenu.disabled = true;
 
-    // Defines userId exactly as specified in criteria
-    const userId = event.target.value || 1;
+    const rawValue = event.target && event.target.value;
+    const userId = (rawValue && /^\d+$/.test(rawValue)) ? rawValue : 1;
 
-    // Fetch posts for the user
     const posts = await getUserPosts(userId);
-
-    // Refresh posts display
     const refreshPostsArray = await refreshPosts(posts);
 
     selectMenu.disabled = false;
@@ -312,18 +279,22 @@ async function selectMenuChangeEventHandler(event) {
     return [userId, posts, refreshPostsArray];
 }
 
+// Initializes the page by loading users and populating the select menu
 async function initPage() {
     const users = await getUsers();
     const select = populateSelectMenu(users);
-
     return [users, select];
 }
 
+// Sets up the app and adds the select menu change listener
 function initApp() {
-    initPage(); // call async function but don’t await, as per instructions
+    initPage();
 
     const selectMenu = document.getElementById('selectMenu');
     if (selectMenu) {
         selectMenu.addEventListener('change', selectMenuChangeEventHandler);
     }
 }
+
+// Run the app when the DOM content is loaded
+document.addEventListener('DOMContentLoaded', initApp);
